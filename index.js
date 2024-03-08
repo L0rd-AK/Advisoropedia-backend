@@ -12,7 +12,19 @@ app.use(cors({
     credentials: true
   }));
 app.use(express.json());
-
+// ========== custom middleware ==========
+const verifyToken=async(req,res,next)=>{
+    const token=req.headers.authorization;
+    if(!token){
+      return res.status(401).send({message:'Not Authorized'})
+    }
+    jwt.verify(token,process.env.TOKEN_KEY,(err,decoded)=>{
+        if(err)return res.status(401).send({message:'Not Authorized'})
+        req.user=decoded
+      console.log('success');
+        next()
+    })  
+  }
 
 // ==================== mongoDB code ====================
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.u9t7oll.mongodb.net/?retryWrites=true&w=majority`;
@@ -30,6 +42,8 @@ async function run() {
   try {
     // ==================== collections ====================
     const Users=client.db('Advisoropedia').collection('Users')
+    const Posts=client.db('Advisoropedia').collection('Posts')
+    
      // ========================================= JWT secure api =============================================================
      app.post('/jwt',async(req,res)=>{
         const user=req.body;
@@ -42,8 +56,8 @@ async function run() {
         res.clearCookie('token',{maxAge:0})
         .send({success: true});
       })
-    // ==================== get + post api ====================
-    app.get('/users', async(req,res)=>{
+    // ==================== get + post api for users ====================
+    app.get('/users',verifyToken, async(req,res)=>{
         const cursor=Users.find();
         const result=await cursor.toArray();
         res.send(result)
@@ -58,8 +72,13 @@ async function run() {
         const result=await Users.insertOne(user);
         res.send(result);
     })
-
-
+    // ==================== get + post api for posts ====================
+    app.get('/posts',verifyToken, async(req,res)=>{
+        console.log("post got hit");
+        const cursor=Posts.find();
+        const result=await cursor.toArray();
+        res.send(result)
+      })
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
