@@ -8,7 +8,7 @@ const app=express();
 const port=process.env.PORT || 5000;
 // ========== middleware ==========
 app.use(cors({
-    origin:['http://localhost:5173'],
+    origin:['http://localhost:5173','https://advisoropedia-7d958.web.app'],
     credentials: true
   }));
 app.use(express.json());
@@ -79,6 +79,11 @@ async function run() {
         const result=await cursor.toArray();
         res.send(result)
       })
+      app.post('/post', async(req,res)=>{
+        const user=req.body;
+        const result=await Posts.insertOne(user);
+        res.send(result);
+    })
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
